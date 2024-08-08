@@ -1,10 +1,10 @@
 from ssl import HAS_TLSv1_1
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from .models import Profile, Post, LikePost, followersCount, commentPost
+from .models import Profile, Post, LikePost, followersCount, CommentPost
 from itertools import chain
 import random
 
@@ -19,7 +19,8 @@ def index(request):
     user_following_list = []
     feed = []
 
-    user_following = followersCount.objects.filter(follower=request.user.username)
+    user_following = followersCount.objects.filter(
+        follower=request.user.username)
     for users in user_following:
         user_following_list.append(users.user)
 
@@ -36,9 +37,11 @@ def index(request):
         user_list = User.objects.get(username=user.user)
         user_following_all.append(user_list)
 
-    new_suggestions_list = [x for x in list(all_users) if (x not in list(user_following_all))]
+    new_suggestions_list = [x for x in list(
+        all_users) if (x not in list(user_following_all))]
     current_user = User.objects.filter(username=request.user.username)
-    final_suggestions_list = [x for x in list(new_suggestions_list) if (x not in list(current_user))]
+    final_suggestions_list = [x for x in list(
+        new_suggestions_list) if (x not in list(current_user))]
     random.shuffle(final_suggestions_list)
 
     username_profile = []
@@ -53,10 +56,12 @@ def index(request):
 
     suggestions_username_profile_list = list(chain(*username_profile_list))
 
-    user_followers = len(followersCount.objects.filter(follower=request.user.username))
+    user_followers = len(followersCount.objects.filter(
+        follower=request.user.username))
 
-    # posts = Post.objects.all()
+    posts = Post.objects.all()
     return render(request, 'index.html', {'user_profile': user_profile, 'posts': feed_list, 'suggestions_username_profile_list': suggestions_username_profile_list[:4], 'user_followers': user_followers})
+
 
 @login_required(login_url='signin')
 def search(request):
@@ -79,6 +84,7 @@ def search(request):
         username_profile_list = list(chain(*username_profile_list))
 
     return render(request, 'search.html', {'user_profile': user_profile, 'username_profile_list': username_profile_list})
+
 
 @login_required(login_url='signin')
 def upload(request):
@@ -114,15 +120,18 @@ def signup(request):
                 messages.info(request, 'username Taken')
                 return redirect('signup')
             else:
-                user = User.objects.create_user(username=username, email=email, password=password)
+                user = User.objects.create_user(
+                    username=username, email=email, password=password)
                 user.save()
 
-                #log user in and redirect to settings page
-                user_login = auth.authenticate(username=username, password=password)
+                # log user in and redirect to settings page
+                user_login = auth.authenticate(
+                    username=username, password=password)
                 auth.login(request, user_login)
-                #create a profile object for the new user
+                # create a profile object for the new user
                 user_model = User.objects.get(username=username)
-                new_profile = Profile.objects.create(user=user_model, id_user=user_model.id)
+                new_profile = Profile.objects.create(
+                    user=user_model, id_user=user_model.id)
                 new_profile.save()
                 return redirect('settings')
         else:
@@ -131,6 +140,7 @@ def signup(request):
 
     else:
         return render(request, 'signup.html')
+
 
 def signin(request):
     if request.method == 'POST':
@@ -148,10 +158,12 @@ def signin(request):
     else:
         return render(request, 'signin.html')
 
+
 @login_required(login_url='signin')
 def logout(request):
     auth.logout(request)
     return redirect('signin')
+
 
 @login_required(login_url='signin')
 def settings(request):
@@ -182,53 +194,33 @@ def settings(request):
         return redirect('settings')
     return render(request, 'setting.html', {'user_profile': user_profile})
 
- # if request.method == 'POST':
- #        user = request.user.username
- #        image = request.FILES.get('image_upload')
- #        caption = request.POST['caption']
- #        # caption = request.POST.get('caption', False)
- #        # caption = 'caption' in request.POST
- #        # caption = request.POST.get('{{caption}}')
- #        new_post = Post.objects.create(user=user, image=image, caption=caption)
- #        new_post.save()
- #
- #        return redirect('/')
- #    else:
- #        return redirect('/')
+# The comments should be gotten from the index page that shows the page, the comment should be under posts, i.e posts.comments
 
-# @login_required(login_url='signin')
-# def comment_post(request):
-#     if request.method == 'POST':
-#         post_id = request.GET.get('post_id')
-#         post = Post.objects.get(id=post_id)
-#         user = request.user.username
-#        # image = request.FILES.get('image_upload')
-#         comment = request.POST['comment']
-#        # caption = request.POST.get('caption', False)
-#        # caption = 'caption' in request.POST
-#        # caption = request.POST.get('{{caption}}')
-#         comments = commentPost.objects.filter(post_id=post_id, comment=comment)
-#         new_post = commentPost.objects.create(user=user, post_id=post_id, comments=comments)
-#         new_post.save()
-#
-#         return redirect('/')
-#     else:
-#         return redirect('/')
 
-    # if request.method == 'POST':
-    #     # user_object = User.objects.get(username=request.user.username)
-    #     # commenter = Profile.objects.get(user=user_object)
-    #     commenter = request.user.username
-    #     # commenter = Profile.objects.get(user=username)
-    #     post_id = request.GET.get('post_id')
-    #     post = Post.objects.get(id=post_id)
-    #     comment = request.POST['comment']
-    #     new_comment = commentPost.objects.create(post_id=post_id, commenter=commenter, comment=comment)
-    #     new_comment.save()
-    #
-    #     return redirect('/')
-    # else:
-    #     return redirect('/')
+@login_required(login_url='signin')
+def add_comment(request, post_id):
+
+    if request.method == 'POST':
+        print(f"Received post_id: {post_id}")
+        post = Post.objects.get(id=post_id)
+        username = request.user.username
+        comment = request.POST['comment']
+        new_comment = CommentPost.objects.create(
+            comment=comment, username=username, post=post)
+        new_comment.save()
+        # print('the post itself: ', post)
+        # print('comments: ', post.comments.all())
+        # print('comments: ', CommentPost.objects.filter(post=post))
+
+    # comments = post_comment.comments.filter()
+    # comments = CommentPost.objects.filter(post=post)
+    # context = {'comments': comments, 'post': post,
+    #            'post_comment': post_comment}
+    # return render(request, 'index.html', context)
+        return redirect('/')
+    else:
+        return redirect('/')
+
 
 @login_required(login_url='signin')
 def like_post(request):
@@ -237,7 +229,8 @@ def like_post(request):
 
     post = Post.objects.get(id=post_id)
 
-    like_filter = LikePost.objects.filter(post_id=post_id, username=username).first()
+    like_filter = LikePost.objects.filter(
+        post_id=post_id, username=username).first()
 
     if like_filter == None:
         new_like = LikePost.objects.create(post_id=post_id, username=username)
@@ -250,6 +243,7 @@ def like_post(request):
         post.no_of_likes = post.no_of_likes-1
         post.save()
         return redirect('/')
+
 
 @login_required(login_url='signin')
 def profile(request, pk):
@@ -280,6 +274,7 @@ def profile(request, pk):
     }
     return render(request, 'profile.html', context)
 
+
 @login_required(login_url='signin')
 def follow(request):
     if request.method == 'POST':
@@ -287,11 +282,13 @@ def follow(request):
         user = request.POST['user']
 
         if followersCount.objects.filter(follower=follower, user=user).first():
-            delete_follower = followersCount.objects.get(follower=follower, user=user)
+            delete_follower = followersCount.objects.get(
+                follower=follower, user=user)
             delete_follower.delete()
             return redirect('/profile/' + user)
         else:
-            new_follower = followersCount.objects.create(follower=follower, user=user)
+            new_follower = followersCount.objects.create(
+                follower=follower, user=user)
             new_follower.save()
             return redirect('/profile/' + user)
     else:
