@@ -327,31 +327,35 @@
                                     </div>
                                 </div> -->
                                 <!-- <a href="/like-post?post_id={{post.id}}" class="flex items-center space-x-2"></a> -->
+                                
+                                <!-- The above code also works fine for the url path -->
+                                <!-- <form action="/post/{{post.id}}/add_comment/" method="POST">
+                                    {% csrf_token %} -->
 
-                                <!-- <form action="comment-post?post_id={{post_id}}" method="POST">
+                                <form action="{% url 'add_comment' post.id %}"  method="POST">
                                     {% csrf_token %}
 
                                 <div class="bg-gray-100 bg-gray-100 rounded-full rounded-md relative ">
                                     <input type="text" name="comment" placeholder="post a comment" class="bg-transparent max-h-10 shadow-none">
                                     <div class="absolute bottom-0 flex h-full items-center right-0 right-3 text-xl space-x-2">
-                                        <button class="button bg-blue-700" type="submit">comment</button> -->
+                                        <button class="button bg-blue-700" type="submit">comment</button>
                                         <!-- <a href="#"> <i class="uil-image"></i></a> -->
-                                    <!-- </div>
-                                </div> -->
-                                <!-- </form>
-                                {% for comment in comments %}
-                                <p>
-                                    <a href="/profile/{{commenter.user}}"><strong>{{comment.user}}</strong> </a>{{comment.comment}}
-                                </p>
-                                {% endfor %} -->
-    
+                                    </div>
+                                </form>
                             </div>
-    
+                                {% for comment in post.comments.all %}
+                                <p>
+                                    <a href="/profile/{{comment.username}}">{{comment.username}} </a>{{comment.comment}}
+                                </p>
+                                {% endfor %}
+                            
                         </div>
-                        {% endfor %}
-
-
+                        
                     </div>
+                    {% endfor %}
+                    
+                    
+                </div>
 
                     <!-- right sidebar-->
                     <div class="lg:w-5/12">
